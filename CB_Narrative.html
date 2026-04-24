@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardBattle — 세계관 & 네러티브</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#0e0a04; --bg1:#181008; --bg2:#241608; --bg3:#2e1e0c;
+  --wood:#7a4418; --wood2:#5a2e0c; --wood3:#9a5828;
+  --amber:#d4a820; --amber2:#f0c830; --amber3:#c09010;
+  --fire:#ff6030; --firea:rgba(255,96,48,.12);
+  --water:#42a5f5; --watera:rgba(66,165,245,.12);
+  --forest:#4caf50; --foresta:rgba(76,175,80,.12);
+  --light:#ffd54f; --lighta:rgba(255,213,79,.12);
+  --dark:#ba68c8; --darka:rgba(186,104,200,.12);
+  --t1:#f0e0b8; --t2:#b89860; --t3:#806830;
+  --bdr:rgba(212,168,32,.12); --bdrm:rgba(212,168,32,.22); --bdrh:rgba(212,168,32,.45);
+  --nav-h:60px; --sidebar-w:220px; --r:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg0);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -5%,rgba(212,168,32,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 60% at 5% 100%,rgba(76,175,80,.05) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 40% at 95% 15%,rgba(255,96,48,.04) 0%,transparent 50%);}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);
+  background:linear-gradient(180deg,#2e1a08f0,#1e1004f0);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:2px solid var(--wood2);
+  box-shadow:0 2px 0 rgba(154,88,40,.4),0 4px 24px rgba(0,0,0,.5);
+  z-index:100;display:flex;align-items:center;padding:0 28px;gap:0;}
+.nav-brand{display:flex;align-items:center;gap:10px;margin-right:20px;flex-shrink:0;}
+.nav-brand-icon{width:34px;height:34px;
+  background:linear-gradient(135deg,rgba(212,168,32,.2),rgba(255,96,48,.1)) padding-box,
+             linear-gradient(135deg,var(--amber),var(--fire)) border-box;
+  border:1.5px solid transparent;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  filter:drop-shadow(0 0 8px rgba(212,168,32,.5));}
+.nav-brand-text{display:flex;flex-direction:column;gap:1px;}
+.nav-brand-name{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--amber);letter-spacing:.08em;}
+.nav-brand-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:.06em;}
+.nav-divider{width:1px;height:28px;background:var(--bdrm);margin:0 18px;flex-shrink:0;}
+.nav-page-title{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--t1);letter-spacing:.04em;white-space:nowrap;}
+.nav-end{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.nav-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;
+  background:rgba(212,168,32,.06);border:1px solid var(--bdr);
+  border-radius:20px;font-size:11px;color:var(--t2);white-space:nowrap;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:var(--nav-h);left:0;bottom:0;width:var(--sidebar-w);
+  background:linear-gradient(180deg,#1a1006,#120c04);
+  border-right:1px solid var(--wood2);overflow-y:auto;z-index:90;padding:16px 0 40px;}
+.sb-section{margin-bottom:4px;}
+.sb-section-label{padding:14px 18px 6px;font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:600;color:var(--t3);letter-spacing:.14em;text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:9px 18px;
+  font-size:13px;color:var(--t2);cursor:pointer;transition:all .15s;border-left:2px solid transparent;}
+.sb-item:hover{color:var(--t1);background:rgba(212,168,32,.04);}
+.sb-item.active{color:var(--amber);background:rgba(212,168,32,.07);border-left-color:var(--amber);}
+.sb-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);flex-shrink:0;width:16px;}
+.sb-icon{font-size:14px;flex-shrink:0;}
+
+/* MAIN */
+main{margin-top:var(--nav-h);margin-left:var(--sidebar-w);padding:40px 36px 80px;max-width:1320px;position:relative;z-index:1;}
+
+/* SECTION */
+.section{display:none;}
+.section.active{display:block;animation:secin .25s cubic-bezier(.22,.61,.36,1) both;}
+@keyframes secin{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* PAGE HEADER */
+.ph{margin-bottom:36px;}
+.ph-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.ph-tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--amber);
+  background:linear-gradient(var(--bg2),var(--bg2)) padding-box,
+             linear-gradient(90deg,var(--amber),var(--fire)) border-box;
+  border:1px solid transparent;border-radius:4px;padding:2px 8px;letter-spacing:.08em;text-transform:uppercase;}
+.ph-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(212,168,32,.2),transparent);}
+.ph-title{font-family:'Cinzel',serif;font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:.02em;line-height:1.2;margin-bottom:10px;color:var(--amber2);}
+.ph-desc{font-size:14px;color:var(--t2);line-height:1.75;}
+.ph-rule{margin-top:24px;height:1px;background:linear-gradient(90deg,var(--bdrm) 0%,transparent 70%);}
+
+/* BENTO */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;}
+.b-cell{background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;position:relative;transition:border-color .2s,box-shadow .2s;}
+.b-cell:hover{border-color:var(--bdrh);box-shadow:0 6px 28px rgba(0,0,0,.4);}
+.s4{grid-column:span 4;}.s5{grid-column:span 5;}.s6{grid-column:span 6;}.s7{grid-column:span 7;}.s8{grid-column:span 8;}.s12{grid-column:span 12;}
+.cell-head{padding:18px 22px 14px;border-bottom:1px solid var(--bdrm);position:relative;}
+.cell-head::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.ch-fire .cell-head::before{background:linear-gradient(90deg,var(--fire),transparent 70%);}
+.ch-water .cell-head::before{background:linear-gradient(90deg,var(--water),transparent 70%);}
+.ch-forest .cell-head::before{background:linear-gradient(90deg,var(--forest),transparent 70%);}
+.ch-light .cell-head::before{background:linear-gradient(90deg,var(--light),transparent 70%);}
+.ch-dark .cell-head::before{background:linear-gradient(90deg,var(--dark),transparent 70%);}
+.ch-amber .cell-head::before{background:linear-gradient(90deg,var(--amber),transparent 70%);}
+.ch-wood .cell-head::before{background:linear-gradient(90deg,var(--wood3),transparent 70%);}
+.cell-tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
+.ch-fire .cell-tag{color:var(--fire);}
+.ch-water .cell-tag{color:var(--water);}
+.ch-forest .cell-tag{color:var(--forest);}
+.ch-light .cell-tag{color:var(--light);}
+.ch-dark .cell-tag{color:var(--dark);}
+.ch-amber .cell-tag{color:var(--amber);}
+.ch-wood .cell-tag{color:var(--wood3);}
+.cell-title{font-family:'Cinzel',serif;font-size:17px;font-weight:700;margin-bottom:3px;color:var(--t1);}
+.cell-sub{font-size:12px;color:var(--t2);line-height:1.55;}
+.cell-body{padding:18px 22px;}
+
+/* HERO CARD */
+.hero-card{background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;transition:border-color .2s,transform .2s,box-shadow .2s;}
+.hero-card:hover{border-color:var(--bdrh);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.hero-top{padding:22px 22px 16px;position:relative;}
+.hero-top::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.hc-fire .hero-top::before{background:linear-gradient(90deg,var(--fire),transparent);}
+.hc-water .hero-top::before{background:linear-gradient(90deg,var(--water),transparent);}
+.hc-forest .hero-top::before{background:linear-gradient(90deg,var(--forest),transparent);}
+.hc-light .hero-top::before{background:linear-gradient(90deg,var(--light),transparent);}
+.hc-dark .hero-top::before{background:linear-gradient(90deg,var(--dark),transparent);}
+.hero-icon-row{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.hero-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1.5px solid var(--bdrm);}
+.hc-fire .hero-icon{background:var(--firea);border-color:rgba(255,96,48,.3);}
+.hc-water .hero-icon{background:var(--watera);border-color:rgba(66,165,245,.3);}
+.hc-forest .hero-icon{background:var(--foresta);border-color:rgba(76,175,80,.3);}
+.hc-light .hero-icon{background:var(--lighta);border-color:rgba(255,213,79,.3);}
+.hc-dark .hero-icon{background:var(--darka);border-color:rgba(186,104,200,.3);}
+.hero-name{font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--t1);margin-bottom:2px;}
+.hero-epithet{font-size:11px;color:var(--t3);letter-spacing:.04em;}
+.hero-attr{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.attr-fire{background:var(--firea);color:var(--fire);border:1px solid rgba(255,96,48,.3);}
+.attr-water{background:var(--watera);color:var(--water);border:1px solid rgba(66,165,245,.3);}
+.attr-forest{background:var(--foresta);color:var(--forest);border:1px solid rgba(76,175,80,.3);}
+.attr-light{background:var(--lighta);color:var(--light);border:1px solid rgba(255,213,79,.3);}
+.attr-dark{background:var(--darka);color:var(--dark);border:1px solid rgba(186,104,200,.3);}
+.hero-lore{font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:14px;}
+.hero-quote{background:rgba(212,168,32,.05);border-left:2px solid var(--amber3);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12.5px;font-style:italic;color:var(--t1);line-height:1.65;}
+.hero-bottom{padding:14px 22px;border-top:1px solid var(--bdrm);display:flex;flex-wrap:wrap;gap:6px;}
+
+/* STAT BADGE */
+.stat-badge{display:flex;flex-direction:column;align-items:center;background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:8px 14px;min-width:64px;}
+.stat-val{font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:var(--amber2);line-height:1;}
+.stat-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--t3);letter-spacing:.1em;margin-top:4px;text-transform:uppercase;}
+
+/* SKILL CHIP */
+.skill-list{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+.skill-item{display:flex;align-items:flex-start;gap:8px;background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:8px 11px;}
+.skill-name{font-size:12px;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.skill-desc{font-size:11px;color:var(--t2);}
+.skill-cost{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;flex-shrink:0;padding:2px 6px;border-radius:6px;}
+.sc-fire{background:var(--firea);color:var(--fire);}
+.sc-water{background:var(--watera);color:var(--water);}
+.sc-forest{background:var(--foresta);color:var(--forest);}
+.sc-light{background:var(--lighta);color:var(--light);}
+.sc-dark{background:var(--darka);color:var(--dark);}
+
+/* ENEMY CARD */
+.enemy-card{background:var(--bg2);border:1px solid var(--bdrm);border-radius:14px;overflow:hidden;transition:border-color .2s,box-shadow .2s;}
+.enemy-card:hover{border-color:rgba(255,96,48,.35);box-shadow:0 6px 24px rgba(0,0,0,.4);}
+.enemy-head{padding:16px 18px 12px;border-bottom:1px solid var(--bdrm);display:flex;align-items:center;gap:12px;}
+.enemy-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(255,96,48,.06);border:1px solid rgba(255,96,48,.18);flex-shrink:0;}
+.enemy-name{font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.enemy-role{font-size:11px;color:var(--t3);}
+.enemy-body{padding:14px 18px;font-size:13px;color:var(--t2);line-height:1.75;}
+.enemy-threat{display:flex;align-items:center;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdrm);}
+.threat-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;}
+.threat-bar{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;border:1px solid var(--bdrm);}
+.threat-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--fire),#ff3000);}
+
+/* ELEMENT GRID */
+.elem-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.elem-card{background:var(--bg2);border:1px solid var(--bdrm);border-radius:12px;padding:16px 14px;text-align:center;transition:border-color .2s,transform .2s;}
+.elem-card:hover{transform:translateY(-2px);}
+.ec-fire{border-color:rgba(255,96,48,.25);}
+.ec-water{border-color:rgba(66,165,245,.25);}
+.ec-forest{border-color:rgba(76,175,80,.25);}
+.ec-light{border-color:rgba(255,213,79,.25);}
+.ec-dark{border-color:rgba(186,104,200,.25);}
+.ec-fire:hover{border-color:rgba(255,96,48,.5);box-shadow:0 4px 16px rgba(255,96,48,.12);}
+.ec-water:hover{border-color:rgba(66,165,245,.5);box-shadow:0 4px 16px rgba(66,165,245,.12);}
+.ec-forest:hover{border-color:rgba(76,175,80,.5);box-shadow:0 4px 16px rgba(76,175,80,.12);}
+.ec-light:hover{border-color:rgba(255,213,79,.5);box-shadow:0 4px 16px rgba(255,213,79,.12);}
+.ec-dark:hover{border-color:rgba(186,104,200,.5);box-shadow:0 4px 16px rgba(186,104,200,.12);}
+.elem-icon{font-size:28px;margin-bottom:8px;}
+.elem-name{font-family:'Cinzel',serif;font-size:13px;font-weight:700;margin-bottom:2px;}
+.ec-fire .elem-name{color:var(--fire);}
+.ec-water .elem-name{color:var(--water);}
+.ec-forest .elem-name{color:var(--forest);}
+.ec-light .elem-name{color:var(--light);}
+.ec-dark .elem-name{color:var(--dark);}
+.elem-ko{font-size:12px;color:var(--t2);margin-bottom:8px;}
+.elem-desc{font-size:11px;color:var(--t3);line-height:1.6;}
+
+/* WEAK TABLE */
+.weak-table{width:100%;border-collapse:collapse;font-size:12px;}
+.weak-table th{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:8px 10px;text-align:center;border-bottom:1px solid var(--bdrm);}
+.weak-table td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--bdr);color:var(--t2);}
+.weak-table tr:last-child td{border-bottom:none;}
+.wk{color:#ff6060;font-weight:700;}
+.rs{color:#60c0ff;font-weight:700;}
+.nt{color:var(--t3);}
+
+/* CALLOUT */
+.callout{background:rgba(14,10,4,.6);border:1px solid var(--bdrm);border-radius:10px;padding:14px 17px;backdrop-filter:blur(8px);}
+.callout-tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.callout-body{font-size:13px;color:var(--t1);line-height:1.7;}
+.callout-body strong{color:var(--amber2);}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;gap:16px;position:relative;}
+.tl-item::before{content:'';position:absolute;left:19px;top:36px;bottom:-4px;width:1px;background:var(--bdrm);}
+.tl-item:last-child::before{display:none;}
+.tl-dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:var(--bg3);border:1.5px solid var(--bdrm);z-index:1;}
+.tl-body{flex:1;padding-bottom:20px;}
+.tl-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.tl-title{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--t1);margin-bottom:6px;}
+.tl-desc{font-size:12.5px;color:var(--t2);line-height:1.7;}
+
+/* CHIP ROW */
+.chip-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px;}
+.chip{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--bg2);border:1px solid var(--bdrm);border-radius:20px;font-size:11px;font-weight:600;color:var(--t2);}
+.chip-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* FOOTER */
+footer{text-align:center;padding:24px;font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace;border-top:1px solid var(--bdrm);margin-top:40px;letter-spacing:.06em;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-icon">⚔️</div>
+    <div class="nav-brand-text">
+      <div class="nav-brand-name">CardBattle</div>
+      <div class="nav-brand-sub">NARRATIVE · v0.1</div>
+    </div>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-page-title" id="nav-page-title">세계관 — 엘루리아</div>
+  <div class="nav-end">
+    <div class="nav-chip">🗓 2026-04-14</div>
+    <div class="nav-chip">📋 Draft</div>
+  </div>
+</nav>
+
+<aside class="sidebar">
+  <div class="sb-section">
+    <div class="sb-section-label">기획</div>
+    <div class="sb-item active" data-tab="fun" onclick="showTab('fun')">
+      <span class="sb-num">01</span><span class="sb-icon">🎯</span>목표 & 재미요소
+    </div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-label">세계관</div>
+    <div class="sb-item" data-tab="world" onclick="showTab('world')">
+      <span class="sb-num">02</span><span class="sb-icon">🌍</span>엘루리아
+    </div>
+    <div class="sb-item" data-tab="element" onclick="showTab('element')">
+      <span class="sb-num">03</span><span class="sb-icon">✨</span>원소 체계
+    </div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-label">영웅</div>
+    <div class="sb-item" data-tab="heroes" onclick="showTab('heroes')">
+      <span class="sb-num">04</span><span class="sb-icon">🦸</span>영웅 열전
+    </div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-label">적군</div>
+    <div class="sb-item" data-tab="enemies" onclick="showTab('enemies')">
+      <span class="sb-num">05</span><span class="sb-icon">👹</span>적군 도감
+    </div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-label">전투</div>
+    <div class="sb-item" data-tab="battle" onclick="showTab('battle')">
+      <span class="sb-num">06</span><span class="sb-icon">⚔️</span>전투 네러티브
+    </div>
+  </div>
+</aside>
+
+<main>
+
+<!-- ══════════ 01: 세계관 ══════════ -->
+<div class="section" id="tab-world">
+  <div class="ph">
+    <div class="ph-eyebrow">
+      <div class="ph-tag">WORLD · 01</div>
+      <div class="ph-line"></div>
+    </div>
+    <div class="ph-title">세계관 — 엘루리아</div>
+    <div class="ph-desc">태초에 다섯 원소신이 대지에 각자의 힘을 불어넣어 균형을 이루었다. 그 균형이 깨지는 날, 세상은 어둠으로 뒤덮인다.</div>
+    <div class="ph-rule"></div>
+  </div>
+
+  <div class="bento">
+    <div class="b-cell s12 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Origin</div>
+        <div class="cell-title">태초의 균형</div>
+        <div class="cell-sub">다섯 원소신의 계약</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:14px;line-height:1.8;color:var(--t2);">
+          태초에 다섯 원소신 — <strong style="color:var(--fire)">이그니스(불)</strong>, <strong style="color:var(--water)">아쿠아(물)</strong>,
+          <strong style="color:var(--forest)">실바누스(숲)</strong>, <strong style="color:var(--light)">루멘(빛)</strong>, <strong style="color:var(--dark)">움브라(암흑)</strong> — 이
+          한자리에 모여 계약을 맺었다. 다섯 기운이 서로를 제어하고 보완하는 한, 세상 엘루리아는 번영할 것이라고.
+          <br><br>
+          수천 년 동안 균형은 유지되었다. 불은 숲을 위협하고, 물은 불을 잠재우며, 빛은 어둠을 경계하고, 어둠은 빛의 오만을 견제했다.
+          그것은 싸움이 아니라 <strong style="color:var(--amber2)">숨결</strong>이었다.
+        </p>
+      </div>
+    </div>
+
+    <div class="b-cell s7 ch-dark">
+      <div class="cell-head">
+        <div class="cell-tag">Calamity</div>
+        <div class="cell-title">어둠의 심장</div>
+        <div class="cell-sub">Dark Core — 균형을 깨트린 재앙</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);">
+          대지 깊숙한 곳, 원소신들도 손대지 않은 공간에 <strong style="color:var(--dark)">어둠의 심장(Dark Core)</strong>이 잠들어 있었다.
+          태초부터 존재했던 그것은 다섯 원소 어디에도 속하지 않는 순수한 혼돈의 결정체.
+        </p>
+        <br>
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);">
+          어느 날 — 이유는 알려지지 않았다 — 어둠의 심장이 맥동하기 시작했다.
+          암흑 에너지가 지층을 타고 올라와 숲을 썩히고, 생물들을 포악하게 만들고, 고귀한 용족을 타락시켰다.
+          오크 군단은 미쳐 날뛰었고, 전사한 병사들의 영혼은 망령이 되어 땅 위를 떠돌았다.
+        </p>
+        <br>
+        <div class="callout">
+          <div class="callout-tag">핵심 갈등</div>
+          <div class="callout-body">어둠의 심장을 봉인하지 않으면 <strong>다섯 원소의 균형이 영원히 무너진다.</strong> 엘루리아는 혼돈의 불모지가 될 것이다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell s5 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Response</div>
+        <div class="cell-title">다섯 영웅의 소집</div>
+        <div class="cell-sub">운명이 엮은 만남</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);">
+          각자의 이유로 전장에 뛰어든 다섯 영웅이 처음으로 한자리에 모였다.
+          그들을 부른 건 신도, 왕도 아니었다.
+          어둠의 심장이 모든 원소를 오염시키면서, 각자의 원소를 지키려는 의지가 그들을 같은 방향으로 이끈 것이다.
+        </p>
+        <br>
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);">
+          처음엔 서로를 의심했다. 특히 어둠의 기운을 다루는 섀도우를.
+          하지만 싸울수록, 살아남을수록 — 신뢰가 쌓였다.
+        </p>
+      </div>
+    </div>
+
+    <div class="b-cell s12 ch-wood">
+      <div class="cell-head">
+        <div class="cell-tag">World Map Concept</div>
+        <div class="cell-title">전장의 구조</div>
+        <div class="cell-sub">왼쪽(빛의 영역)에서 오른쪽(어둠의 심장)으로</div>
+      </div>
+      <div class="cell-body">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">🌟</div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--light);margin-bottom:4px;">빛의 평원</div>
+            <div style="font-size:11px;color:var(--t3);">플레이어 출발 거점. 안전 지대.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">🌲</div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">엘드 숲</div>
+            <div style="font-size:11px;color:var(--t3);">고블린·와이번 출몰. 지형 전술 핵심.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">⛰️</div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--amber);margin-bottom:4px;">화염 산맥</div>
+            <div style="font-size:11px;color:var(--t3);">오크 거점. 이동 불가 산악 지형.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">💀</div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--dark);margin-bottom:4px;">망자의 늪</div>
+            <div style="font-size:11px;color:var(--t3);">망령·골렘 영역. 암흑 에너지 밀집.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid rgba(186,104,200,.4);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">🌑</div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--dark);margin-bottom:4px;">어둠의 핵</div>
+            <div style="font-size:11px;color:var(--t3);">최종 목적지. 어둠의 심장 봉인 전장.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 02: 원소 체계 ══════════ -->
+<div class="section" id="tab-element">
+  <div class="ph">
+    <div class="ph-eyebrow">
+      <div class="ph-tag">ELEMENT · 02</div>
+      <div class="ph-line"></div>
+    </div>
+    <div class="ph-title">원소 체계</div>
+    <div class="ph-desc">엘루리아의 모든 힘은 다섯 원소에서 비롯된다. 영웅의 스킬, 몬스터의 약점, 카드덱의 구성 — 전부 원소가 지배한다.</div>
+    <div class="ph-rule"></div>
+  </div>
+
+  <div class="elem-grid" style="margin-bottom:24px;">
+    <div class="elem-card ec-fire">
+      <div class="elem-icon">🔥</div>
+      <div class="elem-name">FIRE</div>
+      <div class="elem-ko">불 · 이그니스</div>
+      <div class="elem-desc">공격과 파괴의 원소. 강타와 화상 상태이상을 통해 적을 불태운다. 물에 약하다.</div>
+    </div>
+    <div class="elem-card ec-water">
+      <div class="elem-icon">💧</div>
+      <div class="elem-name">WATER</div>
+      <div class="elem-ko">물 · 아쿠아</div>
+      <div class="elem-desc">흐름과 제어의 원소. 원거리 공격과 아군 실드 부여에 특화. 숲에 약하다.</div>
+    </div>
+    <div class="elem-card ec-forest">
+      <div class="elem-icon">🌿</div>
+      <div class="elem-name">FOREST</div>
+      <div class="elem-ko">숲 · 실바누스</div>
+      <div class="elem-desc">생명과 치유의 원소. 아군 회복과 재생 능력이 뛰어나다. 불에 약하다.</div>
+    </div>
+    <div class="elem-card ec-light">
+      <div class="elem-icon">✨</div>
+      <div class="elem-name">LIGHT</div>
+      <div class="elem-ko">빛 · 루멘</div>
+      <div class="elem-desc">보호와 부활의 원소. 강력한 실드와 전체 회복 스킬을 보유. 암흑에 약하다.</div>
+    </div>
+    <div class="elem-card ec-dark">
+      <div class="elem-icon">🌑</div>
+      <div class="elem-name">DARK</div>
+      <div class="elem-ko">암흑 · 움브라</div>
+      <div class="elem-desc">저주와 흡수의 원소. 적의 능력을 약화시키고 생명을 빼앗는다. 빛에 약하다.</div>
+    </div>
+  </div>
+
+  <div class="bento">
+    <div class="b-cell s6 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Weakness System</div>
+        <div class="cell-title">상성 관계</div>
+        <div class="cell-sub">약점을 찌르면 데미지 1.5× 적용</div>
+      </div>
+      <div class="cell-body">
+        <table class="weak-table">
+          <thead>
+            <tr><th>원소</th><th>약점</th><th>저항</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="color:var(--fire)">🔥 불</td><td class="wk">💧 물</td><td class="rs">🌿 숲</td></tr>
+            <tr><td style="color:var(--water)">💧 물</td><td class="wk">🌿 숲</td><td class="rs">🔥 불</td></tr>
+            <tr><td style="color:var(--forest)">🌿 숲</td><td class="wk">🔥 불</td><td class="rs">💧 물</td></tr>
+            <tr><td style="color:var(--light)">✨ 빛</td><td class="wk">🌑 암흑</td><td class="rs">🌿 숲</td></tr>
+            <tr><td style="color:var(--dark)">🌑 암흑</td><td class="wk">✨ 빛</td><td class="rs">🌑 암흑</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="b-cell s6 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Card Deck</div>
+        <div class="cell-title">카드덱 = 원소의 기운</div>
+        <div class="cell-sub">영웅이 품은 에너지의 집합</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);margin-bottom:12px;">
+          전투에서 영웅이 뽑는 카드는 단순한 자원이 아니다. 그것은 엘루리아의 원소 에너지가 영웅의 손 안에 모인 것.
+          스킬을 사용할수록 에너지가 소진되고, 덱을 순환하며 다시 채워진다.
+        </p>
+        <div class="callout">
+          <div class="callout-tag">설계 의도</div>
+          <div class="callout-body">덱은 5원소가 균등하게 섞여 있다. 주속성 카드를 많이 모으면 강력한 스킬을 쓸 수 있지만, <strong>그 기회는 언제나 운과 판단의 사이에 있다.</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 03: 영웅 열전 ══════════ -->
+<div class="section" id="tab-heroes">
+  <div class="ph">
+    <div class="ph-eyebrow">
+      <div class="ph-tag">HEROES · 03</div>
+      <div class="ph-line"></div>
+    </div>
+    <div class="ph-title">영웅 열전</div>
+    <div class="ph-desc">서로 다른 곳에서 온 다섯 명. 각자의 이유로 싸운다. 그러나 향하는 곳은 하나다.</div>
+    <div class="ph-rule"></div>
+  </div>
+
+  <div class="chip-row">
+    <div class="chip"><span class="chip-dot" style="background:var(--fire)"></span>카엘 — 불</div>
+    <div class="chip"><span class="chip-dot" style="background:var(--forest)"></span>실바 — 숲</div>
+    <div class="chip"><span class="chip-dot" style="background:var(--water)"></span>아쿠아 — 물</div>
+    <div class="chip"><span class="chip-dot" style="background:var(--light)"></span>루나 — 빛</div>
+    <div class="chip"><span class="chip-dot" style="background:var(--dark)"></span>섀도우 — 암흑</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- 카엘 -->
+    <div class="hero-card hc-fire">
+      <div class="hero-top">
+        <div class="hero-icon-row">
+          <div class="hero-icon">🔥</div>
+          <div>
+            <div class="hero-name">카엘</div>
+            <div class="hero-epithet">"분노의 불꽃" — 근접 공격형 / 이동속도 빠름</div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <span class="hero-attr attr-fire">🔥 FIRE</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 0;align-self:center;">ATK 120 · SPD 8 · MOV 3</span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-lore">
+          고향 마을이 오크 군단에 불태워지는 걸 살아남은 유일한 생존자. 처음엔 복수심 하나로 불을 다뤘지만,
+          루나를 만나면서 자신의 불꽃이 지키는 힘이 될 수 있다는 걸 배우는 중이다.
+          누구보다 먼저 적진으로 뛰어들고, 누구보다 오래 버틴다. 팀의 선봉.
+        </p>
+        <div class="hero-quote">"이 불은 내 분노다. 하지만 이제는 — 너희를 지키는 불이기도 하다."</div>
+        <div class="skill-list">
+          <div class="skill-item">
+            <span class="skill-cost sc-fire">🔥×3</span>
+            <div><div class="skill-name">불꽃폭발</div><div class="skill-desc">강타 + 화상 2턴. 단일 적에게 최대 피해.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-fire">🔥×2</span>
+            <div><div class="skill-name">점화</div><div class="skill-desc">화상 3턴. 지속 피해로 적의 체력을 서서히 소모.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-fire">🔥×5</span>
+            <div><div class="skill-name">인페르노</div><div class="skill-desc">최강 화염 피해. 고비용 필살기. 거의 즉사.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 실바 -->
+    <div class="hero-card hc-forest">
+      <div class="hero-top">
+        <div class="hero-icon-row">
+          <div class="hero-icon">🌿</div>
+          <div>
+            <div class="hero-name">실바</div>
+            <div class="hero-epithet">"숲의 마지막 수호자" — 지원·회복형 / 원거리 2칸</div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <span class="hero-attr attr-forest">🌿 FOREST</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 0;align-self:center;">ATK 95 · SPD 6 · MOV 2</span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-lore">
+          천 년 수령의 고목에서 태어난 숲 정령의 후계자. 어둠의 심장이 대지를 오염시키면서 숲이 썩어가는 걸 두 눈으로 목격했다.
+          아군을 치유하고 보호하는 게 전투 방식이지만, 분노할 때의 위력은 아무도 막지 못한다. 팀의 생명줄.
+        </p>
+        <div class="hero-quote">"뿌리가 썩으면 나무도 죽는다. 내가 지키지 않으면 아무것도 남지 않아."</div>
+        <div class="skill-list">
+          <div class="skill-item">
+            <span class="skill-cost sc-forest">🌿×3</span>
+            <div><div class="skill-name">치유의 비</div><div class="skill-desc">아군 전체 HP 회복. 전황 역전의 핵심 스킬.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-forest">🌿×2</span>
+            <div><div class="skill-name">자연의 방패</div><div class="skill-desc">아군 1명에게 실드 부여.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-forest">🌿×3</span>
+            <div><div class="skill-name">재생</div><div class="skill-desc">자신 HP + 실드 동시 회복. 장기전용.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 아쿠아 -->
+    <div class="hero-card hc-water">
+      <div class="hero-top">
+        <div class="hero-icon-row">
+          <div class="hero-icon">💧</div>
+          <div>
+            <div class="hero-name">아쿠아</div>
+            <div class="hero-epithet">"자유로운 파도" — 기동형 전술가 / 원거리 3칸</div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <span class="hero-attr attr-water">💧 WATER</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 0;align-self:center;">ATK 105 · SPD 9 · MOV 4</span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-lore">
+          바다를 떠돌던 수(水)마법사. 항구 도시가 망령 떼에 잠식되자 처음으로 진지하게 싸울 이유를 찾았다.
+          가장 이동이 빠르고 사거리가 길다. 흐름을 읽고 전장 전체를 제어하는 전술가형. 5명 중 가장 개인플레이가 강하다.
+        </p>
+        <div class="hero-quote">"파도는 막을 수 없다. 흐름에 올라타느냐, 삼키느냐의 차이일 뿐."</div>
+        <div class="skill-list">
+          <div class="skill-item">
+            <span class="skill-cost sc-water">💧×3</span>
+            <div><div class="skill-name">급류</div><div class="skill-desc">피해 + 적 공격력↓ 2턴. 딜과 디버프 동시.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-water">💧×2</span>
+            <div><div class="skill-name">물의 방패</div><div class="skill-desc">아군 전체 실드. 급할 때 쓰는 전체 보호.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-water">💧×4</span>
+            <div><div class="skill-name">조수 방벽</div><div class="skill-desc">아군 전체 대형 실드. 고비용 전체 방어막.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 루나 -->
+    <div class="hero-card hc-light">
+      <div class="hero-top">
+        <div class="hero-icon-row">
+          <div class="hero-icon">✨</div>
+          <div>
+            <div class="hero-name">루나</div>
+            <div class="hero-epithet">"빛의 성직자" — 힐러·보호형 / 원거리 4칸</div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <span class="hero-attr attr-light">✨ LIGHT</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 0;align-self:center;">ATK 100 · SPD 7 · MOV 2</span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-lore">
+          빛의 신전 출신 치유사. 어둠의 심장이 깨어나자 신전의 명으로 세상에 파견된 유일한 인물.
+          직접 싸우기보다 동료를 지탱하는 역할이지만, 진정한 절망의 순간에 최고의 기적을 일으킨다.
+          팀이 무너지면 루나도 무너진다. 루나가 살아있으면 팀은 살아있다.
+        </p>
+        <div class="hero-quote">"빛은 어둠을 두려워하지 않는다. 빛이 있는 한, 그림자도 있을 수 없으니."</div>
+        <div class="skill-list">
+          <div class="skill-item">
+            <span class="skill-cost sc-light">✨×2</span>
+            <div><div class="skill-name">성스러운 방패</div><div class="skill-desc">아군 1명 실드. 빠른 단일 보호.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-light">✨×2</span>
+            <div><div class="skill-name">성스러운 빛</div><div class="skill-desc">아군 전체 HP 회복. 핵심 유지 스킬.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-light">✨×4</span>
+            <div><div class="skill-name">부활의 빛</div><div class="skill-desc">아군 전체 대회복. 전멸 직전 역전 카드.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 섀도우 -->
+    <div class="hero-card hc-dark">
+      <div class="hero-top">
+        <div class="hero-icon-row">
+          <div class="hero-icon">🌑</div>
+          <div>
+            <div class="hero-name">섀도우</div>
+            <div class="hero-epithet">"어둠을 쓰는 자" — 디버퍼·흡수형 / 최고 이동속도</div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <span class="hero-attr attr-dark">🌑 DARK</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 0;align-self:center;">ATK 115 · SPD 10 · MOV 5</span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-lore">
+          출신 불명. 암흑 원소를 다루는 유일한 영웅이라 오해를 많이 받는다.
+          실은 어둠의 심장과 연결된 존재들을 가장 잘 이해하고, 그 약점을 꿰뚫는다.
+          동료들에게 정체를 밝히지 않지만, 결정적 순간마다 가장 깊은 곳에서 나타난다.
+          <em style="color:var(--t3);">어둠의 심장과 어떤 연관이 있는지 — 그 진실은 최종 전장에서 밝혀진다.</em>
+        </p>
+        <div class="hero-quote">"어둠을 두려워하는 자들이 나를 두려워한다. 그래도 괜찮아. 어둠은 내가 맡겠다."</div>
+        <div class="skill-list">
+          <div class="skill-item">
+            <span class="skill-cost sc-dark">🌑×3</span>
+            <div><div class="skill-name">생명흡수</div><div class="skill-desc">피해 + HP 흡수. 싸울수록 회복되는 지속전 스킬.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-dark">🌑×2</span>
+            <div><div class="skill-name">암흑</div><div class="skill-desc">적 공격력↓ 2턴. 강적 앞에서 쓰는 선제 디버프.</div></div>
+          </div>
+          <div class="skill-item">
+            <span class="skill-cost sc-dark">🌑×4</span>
+            <div><div class="skill-name">악몽</div><div class="skill-desc">적 전체 디버프. 전장을 한 번에 뒤집는 광역기.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ 04: 적군 도감 ══════════ -->
+<div class="section" id="tab-enemies">
+  <div class="ph">
+    <div class="ph-eyebrow">
+      <div class="ph-tag">ENEMIES · 04</div>
+      <div class="ph-line"></div>
+    </div>
+    <div class="ph-title">적군 도감</div>
+    <div class="ph-desc">어둠의 심장이 깨우거나 타락시킨 다섯 종류의 적. 각자 다른 방식으로 영웅들을 위협한다.</div>
+    <div class="ph-rule"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+
+    <div class="enemy-card">
+      <div class="enemy-head">
+        <div class="enemy-icon">👺</div>
+        <div>
+          <div class="enemy-name">고블린</div>
+          <div class="enemy-role" style="color:var(--forest);">🌿 FOREST — 척후·독침형</div>
+        </div>
+      </div>
+      <div class="enemy-body">
+        어둠의 심장에 가장 먼저 오염된 종족. 원래 숲 속에 숨어 살던 소심한 존재들이었지만,
+        암흑 에너지에 노출되면서 공격성이 폭발했다. 빠른 이동속도와 독침으로 아군의 정찰로를 차단한다.
+        <br><br>
+        <strong style="color:var(--t1);">전술 특징:</strong> 선제 포이즌으로 지속 피해를 입히고, 기습으로 추가 피해. 도주로 자신을 보호해 끝까지 살아남으려 한다. 약해 보이지만 방치하면 독이 쌓인다.
+        <div class="enemy-threat">
+          <span class="threat-lbl">위협도</span>
+          <div class="threat-bar"><div class="threat-fill" style="width:40%;background:linear-gradient(90deg,var(--forest),#2e8b2e);"></div></div>
+          <span style="font-size:11px;color:var(--t3);margin-left:6px;">★★☆☆☆</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="enemy-card">
+      <div class="enemy-head">
+        <div class="enemy-icon">👹</div>
+        <div>
+          <div class="enemy-name">오크</div>
+          <div class="enemy-role" style="color:var(--fire);">🔥 FIRE — 돌격·광폭형</div>
+        </div>
+      </div>
+      <div class="enemy-body">
+        한때 엘루리아에서 중립을 지키던 전사 종족. 어둠의 기운에 광폭화되면서 이성을 잃고 파괴만 남았다.
+        가장 높은 체력(1300)을 가진 적으로, 정면으로 상대하면 반드시 피해를 입는다.
+        <br><br>
+        <strong style="color:var(--t1);">전술 특징:</strong> 광폭화로 자신의 공격력을 높이고, 분쇄로 실드를 무시한다. 전투함성으로 실드를 두른 뒤 돌격하는 패턴. 고체력·고공격의 전형적인 탱커.
+        <div class="enemy-threat">
+          <span class="threat-lbl">위협도</span>
+          <div class="threat-bar"><div class="threat-fill" style="width:70%;"></div></div>
+          <span style="font-size:11px;color:var(--t3);margin-left:6px;">★★★★☆</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="enemy-card">
+      <div class="enemy-head">
+        <div class="enemy-icon">🐉</div>
+        <div>
+          <div class="enemy-name">와이번</div>
+          <div class="enemy-role" style="color:var(--fire);">🔥 FIRE — 공중·원거리형</div>
+        </div>
+      </div>
+      <div class="enemy-body">
+        고귀한 용족의 타락한 후예. 어둠의 심장이 뿜어내는 에너지에 오염되어 불과 어둠을 동시에 내뿜는 존재가 되었다.
+        이동속도(5)와 사거리(3)가 모두 높아 전장 어디서든 위협이 된다.
+        <br><br>
+        <strong style="color:var(--t1);">전술 특징:</strong> 화염 숨결로 화상을 입히고, 급강하로 강타. 꼬리 강타로 예상치 못한 추가 피해를 준다. 멀리서 빠르게 치고 빠지는 기동전 전문.
+        <div class="enemy-threat">
+          <span class="threat-lbl">위협도</span>
+          <div class="threat-bar"><div class="threat-fill" style="width:65%;"></div></div>
+          <span style="font-size:11px;color:var(--t3);margin-left:6px;">★★★★☆</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="enemy-card">
+      <div class="enemy-head">
+        <div class="enemy-icon">👻</div>
+        <div>
+          <div class="enemy-name">망령</div>
+          <div class="enemy-role" style="color:var(--dark);">🌑 DARK — 저주·공포형</div>
+        </div>
+      </div>
+      <div class="enemy-body">
+        전쟁에서 목숨을 잃은 병사들의 영혼이 어둠에 잠식되어 생겨난 존재. 육체는 없지만 증오와 저주는 생전보다 강하다.
+        방어력(85)이 높아 물리 타격이 잘 통하지 않는다.
+        <br><br>
+        <strong style="color:var(--t1);">전술 특징:</strong> 저주로 공격력을 깎고 화상까지 걸며, 공포로 장기 디버프를 유지한다. 생명 흡수로 스스로 회복하며 버팬다. 지속전에서 가장 까다로운 적.
+        <div class="enemy-threat">
+          <span class="threat-lbl">위협도</span>
+          <div class="threat-bar"><div class="threat-fill" style="width:55%;background:linear-gradient(90deg,var(--dark),#6a1a8a);"></div></div>
+          <span style="font-size:11px;color:var(--t3);margin-left:6px;">★★★☆☆</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="enemy-card" style="grid-column:span 2;">
+      <div class="enemy-head">
+        <div class="enemy-icon">🗿</div>
+        <div>
+          <div class="enemy-name">골렘</div>
+          <div class="enemy-role" style="color:var(--light);">✨ LIGHT — 요새·보스형</div>
+        </div>
+      </div>
+      <div class="enemy-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          고대 신전이 외적으로부터 자신을 지키기 위해 만들어 놓은 수호 석상.
+          어둠의 심장이 각성시켜 지금은 적군의 최전선 요새 역할을 맡고 있다.
+          최고의 체력(1600)과 방어력(110)을 자랑하는 사실상의 보스급 적.
+          이동속도(2)가 느려서 전진하지 않지만, 한 번 공격을 맞으면 치명적이다.
+        </div>
+        <div>
+          <strong style="color:var(--t1);">전술 특징:</strong> 석화방어와 석화로 실드를 대량 쌓고, 짓밟기로 강타 피해. 멀리서 흔들고 실드 소진을 노리는 게 정석 공략.
+          <div class="enemy-threat" style="margin-top:10px;">
+            <span class="threat-lbl">위협도</span>
+            <div class="threat-bar"><div class="threat-fill" style="width:90%;"></div></div>
+            <span style="font-size:11px;color:var(--t3);margin-left:6px;">★★★★★</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ 05: 전투 네러티브 ══════════ -->
+<div class="section" id="tab-battle">
+  <div class="ph">
+    <div class="ph-eyebrow">
+      <div class="ph-tag">BATTLE · 05</div>
+      <div class="ph-line"></div>
+    </div>
+    <div class="ph-title">전투 네러티브</div>
+    <div class="ph-desc">각 전투는 어둠의 심장으로 향하는 여정의 한 구간이다. 전장마다 다른 서사가 흐른다.</div>
+    <div class="ph-rule"></div>
+  </div>
+
+  <div class="bento" style="margin-bottom:24px;">
+    <div class="b-cell s12 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Journey Structure</div>
+        <div class="cell-title">여정의 5단계</div>
+        <div class="cell-sub">왼쪽(빛의 영역) → 오른쪽(어둠의 핵) 진행 구조</div>
+      </div>
+      <div class="cell-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot">🌟</div>
+            <div class="tl-body">
+              <div class="tl-label">Stage 01</div>
+              <div class="tl-title">빛의 평원 — 만남</div>
+              <div class="tl-desc">다섯 영웅이 처음 마주치는 전장. 고블린 척후대가 길을 막는다. 서로를 아직 믿지 못하는 상태에서 강제로 함께 싸우게 된다. <em style="color:var(--t3);">"적의 적은 동료다 — 일단은."</em></div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">🌲</div>
+            <div class="tl-body">
+              <div class="tl-label">Stage 02</div>
+              <div class="tl-title">엘드 숲 — 실바의 고향</div>
+              <div class="tl-desc">실바가 태어나고 자란 고목 숲. 그러나 지금은 와이번이 날아다니고 썩은 나무가 독기를 뿜는다. 실바가 처음으로 분노하는 장면. 팀이 그의 분노를 이해하기 시작한다.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">⛰️</div>
+            <div class="tl-body">
+              <div class="tl-label">Stage 03</div>
+              <div class="tl-title">화염 산맥 — 카엘의 원수</div>
+              <div class="tl-desc">오크 군단의 거점. 카엘이 고향을 불태운 오크 수장과 마주친다. 복수와 전투 사이에서 흔들리는 카엘을 루나가 붙잡는다. 팀의 신뢰가 한 단계 깊어지는 구간.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">💀</div>
+            <div class="tl-body">
+              <div class="tl-label">Stage 04</div>
+              <div class="tl-title">망자의 늪 — 섀도우의 진실</div>
+              <div class="tl-desc">망령과 골렘이 지키는 어둠의 전초기지. 섀도우가 망령들과 무언가 통하는 것처럼 행동한다. 동료들이 의심하지만 섀도우는 침묵한다. 그리고 결정적 순간에 팀을 구한다.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">🌑</div>
+            <div class="tl-body">
+              <div class="tl-label">Stage 05</div>
+              <div class="tl-title">어둠의 핵 — 봉인</div>
+              <div class="tl-desc">어둠의 심장 앞. 섀도우의 진실이 드러난다 — 그는 어둠의 심장의 파편에서 태어난 존재다. 봉인하려면 자신을 희생해야 한다. 나머지 넷이 그를 선택한다. <em style="color:var(--amber2);">"어둠은 내가 맡겠다."</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bento">
+    <div class="b-cell s6 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Design Intent</div>
+        <div class="cell-title">카드 = 원소의 에너지</div>
+        <div class="cell-sub">서사와 시스템의 연결</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);">
+          영웅이 전투에서 뽑는 카드는 엘루리아의 원소 에너지가 손 안에 모인 것이다.
+          스킬을 쓸수록 에너지가 소진되고 덱을 순환하며 다시 채워지는 구조는,
+          <strong style="color:var(--amber2);">원소 균형이 숨쉬는 세계관을 전투 안에서 체감하게 만드는 장치</strong>다.
+        </p>
+        <br>
+        <div class="callout">
+          <div class="callout-tag">후기 스테이지 아이디어</div>
+          <div class="callout-body">어둠의 심장에 가까워질수록 덱에서 <strong>암흑 카드가 자꾸 섞여 나온다</strong>. 플레이어가 세계의 오염을 직접 느끼게 되는 연출.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell s6 ch-dark">
+      <div class="cell-head">
+        <div class="cell-tag">Hex Map</div>
+        <div class="cell-title">전장의 지형 = 세계의 흔적</div>
+        <div class="cell-sub">산악·물·평지가 이야기를 말한다</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;line-height:1.75;color:var(--t2);">
+          헥스 맵의 산악 지형은 화염 산맥의 잔해고, 물 지형은 오염된 강이다.
+          이동 불가 산악과 사거리를 관통하는 물 지형은 세계관을 설명하는 동시에 전술 선택지를 만든다.
+        </p>
+        <br>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);">
+            <span style="font-size:16px;">⛰️</span>
+            <span><strong style="color:var(--t1);">산악</strong> — 이동 불가. 전선을 나누는 자연 장벽.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);">
+            <span style="font-size:16px;">💧</span>
+            <span><strong style="color:var(--t1);">물</strong> — 이동 불가지만 사거리 관통. 원거리 영웅 우위 지형.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);">
+            <span style="font-size:16px;">🌿</span>
+            <span><strong style="color:var(--t1);">평지</strong> — 기본 전장. 어떤 유닛도 자유롭게 이동.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell s12 ch-wood">
+      <div class="cell-head">
+        <div class="cell-tag">Next Steps</div>
+        <div class="cell-title">다음 기획 과제</div>
+        <div class="cell-sub">네러티브 고도화를 위한 미결 항목</div>
+      </div>
+      <div class="cell-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:18px;margin-bottom:6px;">💬</div>
+            <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px;">영웅 간 대화 시나리오</div>
+            <div style="font-size:11px;color:var(--t3);">스테이지 전후 영웅들 사이의 짧은 대화 이벤트. 관계 발전 표현.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:18px;margin-bottom:6px;">📜</div>
+            <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px;">스테이지 인트로 텍스트</div>
+            <div style="font-size:11px;color:var(--t3);">각 전장 진입 전 분위기 설정 나레이션. 세계관 몰입도 향상.</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:18px;margin-bottom:6px;">🌑</div>
+            <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px;">섀도우 엔딩 분기</div>
+            <div style="font-size:11px;color:var(--t3);">희생 / 공존 두 결말 가지치기. 플레이어 선택 반영 구조.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 06: 목표 & 재미요소 ══════════ -->
+<div class="section active" id="tab-fun">
+  <div class="ph">
+    <div class="ph-eyebrow">
+      <div class="ph-tag">DESIGN · 06</div>
+      <div class="ph-line"></div>
+    </div>
+    <div class="ph-title">목표 & 재미요소</div>
+    <div class="ph-desc">왜 이 게임을 해야 하는가. 무엇을 향해 싸우는가. 그리고 무엇이 계속 플레이하게 만드는가.</div>
+    <div class="ph-rule"></div>
+  </div>
+
+  <!-- 게임 목표 -->
+  <div class="bento" style="margin-bottom:20px;">
+    <div class="b-cell s12 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Objective</div>
+        <div class="cell-title">게임의 목표</div>
+        <div class="cell-sub">한 전투 안의 목표 / 캠페인 전체 목표</div>
+      </div>
+      <div class="cell-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:12px;padding:16px 18px;">
+            <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--amber2);margin-bottom:10px;">⚔️ 한 전투의 목표</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--t2);">
+                <span style="color:var(--amber);flex-shrink:0;margin-top:1px;">▸</span>
+                <span>맵 오른쪽에 배치된 <strong style="color:var(--t1);">모든 적 유닛을 처치</strong>한다</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--t2);">
+                <span style="color:var(--amber);flex-shrink:0;margin-top:1px;">▸</span>
+                <span>아군 영웅이 <strong style="color:var(--t1);">전멸하기 전에</strong> 클리어한다</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--t2);">
+                <span style="color:var(--amber);flex-shrink:0;margin-top:1px;">▸</span>
+                <span>원소 상성과 포지셔닝을 활용해 <strong style="color:var(--t1);">최소 피해로</strong> 클리어할수록 높은 평가</span>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:12px;padding:16px 18px;">
+            <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--dark);margin-bottom:10px;">🌑 캠페인 전체 목표</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--t2);">
+                <span style="color:var(--dark);flex-shrink:0;margin-top:1px;">▸</span>
+                <span>5개 전장을 순서대로 클리어하며 <strong style="color:var(--t1);">어둠의 심장</strong>에 도달한다</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--t2);">
+                <span style="color:var(--dark);flex-shrink:0;margin-top:1px;">▸</span>
+                <span>각 스테이지에서 영웅의 <strong style="color:var(--t1);">서사</strong>를 목격한다</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--t2);">
+                <span style="color:var(--dark);flex-shrink:0;margin-top:1px;">▸</span>
+                <span>최종 전장에서 <strong style="color:var(--t1);">섀도우의 진실</strong>과 마주하고 결말을 선택한다</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 재미요소 6가지 -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+
+    <div class="b-cell ch-amber" style="background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;">
+      <div class="cell-head">
+        <div class="cell-tag">Fun Factor 01</div>
+        <div class="cell-title" style="font-size:15px;">상성을 꿰뚫는 쾌감</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:12px;">
+          적의 속성을 읽고 약점을 찌르는 순간 데미지가 터진다.
+          오크(🔥불)에 물을 맞히면 — <span style="color:var(--water);font-weight:700;">WEAK! 1.5×</span> 텍스트와 함께 화면이 흔들린다.
+          머리로 계획한 게 눈 앞에서 터질 때의 쾌감.
+        </p>
+        <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);">
+          <strong style="color:var(--amber);">핵심 루프</strong> — 적 속성 파악 → 카드 손패 확인 → 약점 스킬 발동 → 연출 폭발
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell ch-water" style="background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;">
+      <div class="cell-head">
+        <div class="cell-tag">Fun Factor 02</div>
+        <div class="cell-title" style="font-size:15px;">손패 운영의 긴장감</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:12px;">
+          인페르노(🔥×5)를 쓰고 싶은데 불 카드가 3장밖에 없다.
+          지금 쓸까, 한 턴 참고 더 모을까.
+          카드를 아끼다가 적에게 먼저 맞거나, 너무 일찍 써서 빈 손으로 턴을 넘기거나 — 항상 선택의 연속이다.
+        </p>
+        <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);">
+          <strong style="color:var(--water);">긴장 포인트</strong> — 최강 스킬 vs 지금 쓸 수 있는 스킬. 덱 순환 타이밍 계산.
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell ch-forest" style="background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;">
+      <div class="cell-head">
+        <div class="cell-tag">Fun Factor 03</div>
+        <div class="cell-title" style="font-size:15px;">헥스 포지셔닝 전술</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:12px;">
+          산악 뒤에 실바를 숨기고, 아쿠아를 강 건너편에서 저격시키고, 카엘만 앞으로 내보낸다.
+          지형을 이용한 포지셔닝이 전투의 판도를 바꾼다.
+          이동 → 공격 순서 하나가 생사를 가른다.
+        </p>
+        <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);">
+          <strong style="color:var(--forest);">전술 깊이</strong> — 사거리·이동범위·지형 세 변수를 동시에 계산하는 전략층.
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell ch-light" style="background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;">
+      <div class="cell-head">
+        <div class="cell-tag">Fun Factor 04</div>
+        <div class="cell-title" style="font-size:15px;">팀 시너지의 발견</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:12px;">
+          카엘이 화상을 걸어 적의 체력을 깎고, 섀도우가 공격력을 디버프하고, 루나가 아군을 풀피로 채우고, 아쿠아가 전체에 실드를 두른다.
+          5명이 각자의 역할로 맞물릴 때 — 팀이 하나의 기계처럼 돌아가는 순간의 쾌감.
+        </p>
+        <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);">
+          <strong style="color:var(--light);">발견의 재미</strong> — 처음엔 몰랐던 콤보를 스스로 찾아내는 과정.
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell ch-dark" style="background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;">
+      <div class="cell-head">
+        <div class="cell-tag">Fun Factor 05</div>
+        <div class="cell-title" style="font-size:15px;">역전의 서사</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:12px;">
+          루나 HP 50 남은 상태에서 골렘 둘이 다가온다.
+          카드 손패엔 빛 카드가 딱 4장.
+          부활의 빛을 쓴다 — 아군 전체 대회복.
+          전멸 직전의 팀이 살아난다.
+          전술 게임의 역전은 언제나 극적이다.
+        </p>
+        <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);">
+          <strong style="color:var(--dark);">감정 곡선</strong> — 절망 → 한 수 → 역전. 이 리듬이 반복 플레이를 만든다.
+        </div>
+      </div>
+    </div>
+
+    <div class="b-cell ch-wood" style="background:var(--bg2);border:1px solid var(--bdrm);border-radius:16px;overflow:hidden;">
+      <div class="cell-head">
+        <div class="cell-tag">Fun Factor 06</div>
+        <div class="cell-title" style="font-size:15px;">서사에 대한 궁금증</div>
+      </div>
+      <div class="cell-body">
+        <p style="font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:12px;">
+          섀도우는 대체 누구인가.
+          어둠의 심장과 어떤 연관이 있는가.
+          봉인하면 정말 사라지는가, 아니면 다른 방법이 있는가.
+          전투를 클리어할수록 조각이 모이고, 최종 전장에서 선택이 기다린다.
+        </p>
+        <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);">
+          <strong style="color:var(--wood3);">동기 부여</strong> — "다음 스테이지엔 뭐가 나올까"를 궁금하게 만드는 서사 훅.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TCG 거래 -->
+  <div class="bento" style="margin-bottom:20px;">
+    <div class="b-cell s12 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">TCG System</div>
+        <div class="cell-title">카드 수집 & 거래 — TCG 레이어</div>
+        <div class="cell-sub">카드는 단순한 자원이 아니다. 소유하고, 강화하고, 거래하는 자산이다.</div>
+      </div>
+      <div class="cell-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--amber2);margin-bottom:10px;">📦 카드 등급 체계</div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:8px 12px;">
+                <span style="font-size:14px;">⬜</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#aaa;">COMMON</div>
+                  <div style="font-size:11px;color:var(--t3);">기본 5속성 카드. 덱의 기반.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid rgba(66,165,245,.3);border-radius:8px;padding:8px 12px;">
+                <span style="font-size:14px;">🟦</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:var(--water);">RARE</div>
+                  <div style="font-size:11px;color:var(--t3);">강화 속성 카드. 스킬 비용 절감 효과.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid rgba(186,104,200,.3);border-radius:8px;padding:8px 12px;">
+                <span style="font-size:14px;">🟪</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:var(--dark);">EPIC</div>
+                  <div style="font-size:11px;color:var(--t3);">복합 속성 카드. 두 원소를 동시에 충족.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid rgba(255,213,79,.4);border-radius:8px;padding:8px 12px;">
+                <span style="font-size:14px;">🟡</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:var(--light);">LEGENDARY</div>
+                  <div style="font-size:11px;color:var(--t3);">세계관 연동 특수 카드. 스킬 강화 + 연출 변형.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--amber2);margin-bottom:10px;">🔄 거래 시스템</div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">마켓플레이스</div>
+                <div style="font-size:11px;color:var(--t3);">플레이어 간 직접 카드 거래. 희귀 카드는 프리미엄 가격 형성.</div>
+              </div>
+              <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">카드 합성</div>
+                <div style="font-size:11px;color:var(--t3);">동일 카드 N장 → 상위 등급 1장으로 업그레이드.</div>
+              </div>
+              <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">전리품 드랍</div>
+                <div style="font-size:11px;color:var(--t3);">전투 클리어 시 랜덤 카드 획득. 등급은 난이도에 비례.</div>
+              </div>
+              <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:8px;padding:10px 12px;">
+                <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">한정 이벤트 카드</div>
+                <div style="font-size:11px;color:var(--t3);">특정 기간만 드랍되는 카드. 거래 시 높은 가치.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="callout">
+          <div class="callout-tag">TCG 설계 의도</div>
+          <div class="callout-body">카드는 전투 자원인 동시에 <strong>수집 자산</strong>이다. 희귀 카드를 직접 쓸지, 거래해서 원하는 카드로 교환할지 — 수집과 전략의 두 레이어가 맞물린다. Legendary 카드는 세계관 캐릭터와 연동되어 <strong>서사적 가치도 가진다.</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 플레이어 타입 -->
+  <div class="bento">
+    <div class="b-cell s12 ch-amber">
+      <div class="cell-head">
+        <div class="cell-tag">Player Types</div>
+        <div class="cell-title">어떤 플레이어를 위한 게임인가</div>
+        <div class="cell-sub">재미 레이어 설계 의도</div>
+      </div>
+      <div class="cell-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:20px;margin-bottom:8px;">🧠</div>
+            <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:6px;">전략가</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.65;">
+              상성을 외우고, 포지셔닝을 계획하고, 카드 순환을 계산한다.
+              최소 피해 클리어를 목표로 매 턴을 최적화한다.
+            </div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:20px;margin-bottom:8px;">🎲</div>
+            <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:6px;">즉흥 플레이어</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.65;">
+              뽑힌 카드로 그때그때 판단한다. 계획 없이도 역전이 가능하고,
+              AUTO 모드로 결과만 볼 수도 있다.
+            </div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:20px;margin-bottom:8px;">📖</div>
+            <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:6px;">스토리 플레이어</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.65;">
+              영웅들의 관계와 섀도우의 진실에 집중한다.
+              전투는 서사를 앞으로 나아가게 하는 도구다.
+            </div>
+          </div>
+        </div>
+          <div style="background:var(--bg3);border:1px solid var(--bdrm);border-radius:10px;padding:14px;">
+            <div style="font-size:20px;margin-bottom:8px;">💰</div>
+            <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:6px;">수집가 / 트레이더</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.65;">
+              희귀 카드를 모으고, 마켓에서 거래한다.
+              전투는 카드를 파밍하는 수단. Legendary 카드 1장이 목표다.
+            </div>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:14px;">
+          <div class="callout-tag">설계 원칙</div>
+          <div class="callout-body">네 레이어가 동시에 존재해야 한다. <strong>헥스 전술 + 카드 핸드 운영 + 영웅 서사 + TCG 수집/거래</strong> — 플레이어는 어느 레이어에서 진입해도 다른 레이어로 자연스럽게 빠져든다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>CARDBATTLE — Narrative & World v0.1 · 2026-04-14 · 기획 내부문서 · Draft</footer>
+
+<script>
+const TAB_TITLES = {
+  'world':   '세계관 — 엘루리아',
+  'element': '원소 체계',
+  'heroes':  '영웅 열전',
+  'enemies': '적군 도감',
+  'battle':  '전투 네러티브',
+  'fun':     '목표 & 재미요소',
+};
+
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelector('[data-tab="' + id + '"]').classList.add('active');
+  const titleEl = document.getElementById('nav-page-title');
+  if (titleEl && TAB_TITLES[id]) titleEl.textContent = TAB_TITLES[id];
+}
+</script>
+</body>
+</html>

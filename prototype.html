@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CardBattle Prototype v4</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #0a0a14;
+  color: #e0e0f0;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── 전체 레이아웃: 5행 ── */
+#game {
+  display: grid;
+  grid-template-rows: 80px 1fr 72px 68px 160px;
+  height: 100vh;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8px;
+  gap: 6px;
+}
+
+/* ── 유닛 상태창 ── */
+.unit-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #12101e;
+  border-radius: 12px;
+  padding: 8px 16px;
+  border: 1px solid #2a1a3a;
+}
+.char-name { font-size: .95rem; font-weight: 700; margin-bottom: 4px; }
+.enemy-name  { color: #ff7070; }
+.player-name { color: #70c0ff; }
+.stat-block  { flex: 1; }
+.bar-wrap  { background: #1a1a2e; border-radius: 5px; height: 9px; overflow: hidden; margin-bottom: 2px; }
+.bar-hp    { background: linear-gradient(90deg,#c62828,#ef5350); height:100%; border-radius:5px; transition:width .4s; }
+.bar-shield{ background: linear-gradient(90deg,#0d47a1,#42a5f5); height:100%; border-radius:5px; transition:width .4s; }
+.stat-num  { font-size: .72rem; color: #bbb; }
+.deck-info { font-size: .68rem; color: #555; text-align:center; line-height:1.9; min-width:44px; }
+.turn-badge {
+  font-size: .68rem; font-weight:700;
+  padding: 2px 9px; border-radius:20px;
+  white-space:nowrap; margin-left:8px;
+  display:inline-block;
+}
+.turn-p { background:#1a2a4a; color:#70c0ff; border:1px solid #42a5f5; }
+.turn-e { background:#2a1a1a; color:#ff7070; border:1px solid #ef5350; }
+
+/* ── 로그 ── */
+#log-area {
+  background: #0d0b18;
+  border-radius: 10px;
+  border: 1px solid #1e1a2e;
+  padding: 7px 12px;
+  overflow-y: auto;
+  font-size: .78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.log-entry     { color: #777; }
+.log-entry.atk { color: #ff9060; }
+.log-entry.def { color: #60b8ff; }
+.log-entry.skl { color: #c060ff; }
+.log-entry.sys { color: #60e0a0; font-style:italic; }
+.log-entry.dmg { color: #ff4444; font-weight:700; }
+
+/* ── 커맨드 버튼 ── */
+#command-area { display:flex; gap:10px; align-items:stretch; }
+
+.cmd-btn {
+  flex: 1;
+  border-radius: 12px;
+  border: 2px solid #252038;
+  background: #13102a;
+  color: #444;
+  font-size: .88rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 4px;
+  line-height: 1.35;
+  /* 비활성: pointer-events 차단 + 금지 커서 */
+  pointer-events: none;
+  cursor: not-allowed;
+  transition: all .15s;
+  position: relative;
+}
+/* 활성 상태 */
+.cmd-btn.on {
+  pointer-events: auto;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: 0 0 12px currentColor;
+}
+.cmd-btn.on:hover { filter:brightness(1.2); transform:translateY(-2px); }
+#btn-atk.on { color:#ff7043; border-color:#ff7043; }
+#btn-def.on { color:#42a5f5; border-color:#42a5f5; }
+#btn-skl.on { color:#ba68c8; border-color:#ba68c8; }
+
+/* ── 손패 영역 ── */
+#hand-area {
+  position: relative;
+  overflow: visible;
+}
+.hand-label {
+  position: absolute;
+  top: 4px; right: 8px;
+  font-size: .68rem;
+  color: #444;
+  z-index: 5;
+}
+.card {
+  position: absolute;
+  width: 68px; height: 96px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: .63rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px #0008;
+  pointer-events: none;
+  transition: bottom .15s;
+}
+.card .emoji { font-size: 1.5rem; }
+.attr-fire   { background:linear-gradient(160deg,#3d1a0a,#7a2f10); border-color:#ff7043; color:#ffb09a; }
+.attr-water  { background:linear-gradient(160deg,#0a1a3d,#0e3566); border-color:#42a5f5; color:#90caf9; }
+.attr-forest { background:linear-gradient(160deg,#0a2a10,#1b5e20); border-color:#66bb6a; color:#a5d6a7; }
+.attr-light  { background:linear-gradient(160deg,#2a2a0a,#5c5500); border-color:#fff176; color:#fff9c4; }
+.attr-dark   { background:linear-gradient(160deg,#1a0a2a,#3a1060); border-color:#ba68c8; color:#e1bee7; }
+
+/* ── 팝업 공통 ── */
+.popup-bg {
+  display: none;
+  position: fixed; inset: 0;
+  background: #000b;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.popup-bg.show { display:flex; }
+.popup-box {
+  background: #15122a;
+  border: 1px solid #3a2a5a;
+  border-radius: 16px;
+  padding: 20px 22px;
+  width: min(92vw, 460px);
+  max-height: 82vh;
+  overflow-y: auto;
+}
+.popup-title { font-size:1rem; font-weight:700; margin-bottom:14px; }
+
+/* ── 속성 행 ── */
+.attr-row {
+  background: #0f0d22;
+  border: 1px solid #252040;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.attr-row.disabled { opacity:.3; pointer-events:none; }
+.attr-row-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.attr-badge {
+  padding: 2px 10px; border-radius:20px;
+  font-size: .78rem; font-weight:700;
+}
+.have-text { font-size:.72rem; color:#666; }
+.eff-text  { margin-left:auto; font-size:.72rem; font-weight:700; }
+.eff-primary { color:#ffd54f; }
+.eff-sub     { color:#ff7043; }
+.eff-none    { color:#333; }
+
+/* 장수 버튼 */
+.count-row { display:flex; gap:5px; }
+.count-btn {
+  flex:1; padding:7px 0; border-radius:7px;
+  border:1px solid #202040; background:#181530;
+  color:#333; font-size:.8rem; font-weight:700;
+  text-align:center; line-height:1.3;
+  cursor:not-allowed; pointer-events:none;
+  transition:all .12s;
+}
+.count-btn.avail {
+  cursor:pointer; pointer-events:auto;
+  color:#aaa; border-color:#3a3060;
+}
+.count-btn.avail:hover { background:#252048; color:#fff; }
+.count-btn.picked {
+  color:#fff !important;
+  border-color:currentColor !important;
+  box-shadow:0 0 8px currentColor;
+}
+
+/* 팝업 미리보기 */
+.preview-bar {
+  background: #0a0818;
+  border-radius: 8px;
+  padding: 9px 13px;
+  margin: 10px 0 14px;
+  font-size: .82rem; color:#666;
+  min-height:36px;
+}
+.preview-bar b { color:#fff; font-size:.95rem; }
+
+/* 팝업 액션 */
+.popup-actions { display:flex; gap:8px; }
+.popup-confirm {
+  flex:1; padding:10px;
+  border-radius:9px; border:2px solid #5a3a80;
+  background:#2a1a40; color:#888;
+  font-size:.88rem; font-weight:700;
+  cursor:not-allowed; pointer-events:none;
+  transition:all .15s;
+}
+.popup-confirm.on {
+  cursor:pointer; pointer-events:auto;
+  color:#fff; border-color:#ba68c8;
+  box-shadow:0 0 10px #ba68c844;
+}
+.popup-confirm.on:hover { background:#3a2a55; }
+.popup-cancel {
+  padding:10px 16px; border-radius:9px;
+  border:1px solid #2a2040; background:transparent;
+  color:#666; font-size:.88rem; cursor:pointer;
+}
+.popup-cancel:hover { color:#fff; border-color:#888; }
+
+/* ── 스킬 아이템 ── */
+.skill-item {
+  background:#0f0d22; border:1px solid #252040;
+  border-radius:10px; padding:12px 14px;
+  margin-bottom:8px;
+  cursor:not-allowed; pointer-events:none;
+  opacity:.35; transition:all .15s;
+}
+.skill-item.ready {
+  opacity:1; cursor:pointer; pointer-events:auto;
+  border-color:#4a2a6a;
+}
+.skill-item.ready:hover { background:#1e1840; border-color:#ba68c8; }
+.skill-name { font-weight:700; color:#e1bee7; margin-bottom:4px; }
+.skill-desc { font-size:.76rem; color:#999; margin-bottom:6px; }
+.cost-tag {
+  display:inline-block; padding:2px 7px;
+  border-radius:12px; margin:2px 3px 2px 0;
+  font-size:.7rem; font-weight:700;
+}
+.cost-ok  { background:#1a3a1a; color:#66bb6a; border:1px solid #66bb6a33; }
+.cost-bad { background:#3a1a1a; color:#ef5350; border:1px solid #ef535033; }
+
+/* ── 결과 오버레이 ── */
+#overlay {
+  display:none; position:fixed; inset:0;
+  background:#000a; align-items:center;
+  justify-content:center; z-index:999;
+  flex-direction:column; gap:18px;
+}
+#overlay.show { display:flex; }
+#overlay-msg { font-size:2.2rem; font-weight:900; }
+#overlay-sub { font-size:.9rem; color:#888; }
+#overlay-btn {
+  padding:11px 38px;
+  background:#2a1a40; border:2px solid #ba68c8;
+  border-radius:10px; color:#fff;
+  font-size:.95rem; cursor:pointer; font-weight:700;
+}
+#overlay-btn:hover { background:#3a2a55; }
+</style>
+</head>
+<body>
+<div id="game">
+
+  <!-- 1행: 적 상태 -->
+  <div class="unit-area">
+    <div class="stat-block">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span class="char-name enemy-name" id="enemy-name">암흑기사 레이스</span>
+        <span class="turn-badge turn-e" id="enemy-badge" style="display:none">적 턴</span>
+        <span id="enemy-weakness" style="font-size:.68rem;color:#ff8888"></span>
+      </div>
+      <div class="bar-wrap"><div class="bar-hp" id="enemy-hp-bar" style="width:100%"></div></div>
+      <div class="stat-num" id="enemy-hp-num"></div>
+      <div class="bar-wrap" style="margin-top:3px"><div class="bar-shield" id="enemy-sh-bar" style="width:0"></div></div>
+      <div class="stat-num" id="enemy-sh-num" style="color:#64b5f6;min-height:13px"></div>
+    </div>
+    <div class="deck-info" id="enemy-deck"></div>
+  </div>
+
+  <!-- 2행: 로그 -->
+  <div id="log-area"></div>
+
+  <!-- 3행: 플레이어 상태 -->
+  <div class="unit-area">
+    <div class="stat-block">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span class="char-name player-name" id="player-name">불꽃검사 카엘</span>
+        <span class="turn-badge turn-p" id="player-badge" style="display:none">내 턴</span>
+        <span id="player-weakness" style="font-size:.68rem;color:#ff8888"></span>
+      </div>
+      <div class="bar-wrap"><div class="bar-hp" id="player-hp-bar" style="width:100%"></div></div>
+      <div class="stat-num" id="player-hp-num"></div>
+      <div class="bar-wrap" style="margin-top:3px"><div class="bar-shield" id="player-sh-bar" style="width:0"></div></div>
+      <div class="stat-num" id="player-sh-num" style="color:#64b5f6;min-height:13px"></div>
+    </div>
+    <div class="deck-info" id="player-deck"></div>
+  </div>
+
+  <!-- 4행: 커맨드 버튼 -->
+  <div id="command-area">
+    <div class="cmd-btn" id="btn-atk" onclick="openAtk()">⚔️ 공격</div>
+    <div class="cmd-btn" id="btn-def" onclick="openDef()">🛡 방어</div>
+    <div class="cmd-btn" id="btn-skl" onclick="openSkl()">✨ 스킬</div>
+  </div>
+
+  <!-- 5행: 손패 -->
+  <div id="hand-area">
+    <div class="hand-label" id="hand-label"></div>
+  </div>
+
+</div>
+
+<!-- 공격 팝업 -->
+<div class="popup-bg" id="popup-atk">
+  <div class="popup-box">
+    <div class="popup-title" style="color:#ff7043">⚔️ 공격 커맨드</div>
+    <div id="atk-attr-list"></div>
+    <div class="preview-bar" id="atk-preview">속성과 장수를 선택하세요</div>
+    <div class="popup-actions">
+      <button class="popup-confirm" id="atk-confirm" onclick="confirmAtk()">공격 실행</button>
+      <button class="popup-cancel"  onclick="closePopup('popup-atk')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 방어 팝업 -->
+<div class="popup-bg" id="popup-def">
+  <div class="popup-box">
+    <div class="popup-title" style="color:#42a5f5">🛡 방어 커맨드</div>
+    <div id="def-attr-list"></div>
+    <div class="preview-bar" id="def-preview">속성과 장수를 선택하세요</div>
+    <div class="popup-actions">
+      <button class="popup-confirm" id="def-confirm" onclick="confirmDef()">방어 실행</button>
+      <button class="popup-cancel"  onclick="closePopup('popup-def')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 스킬 팝업 -->
+<div class="popup-bg" id="popup-skl">
+  <div class="popup-box">
+    <div class="popup-title" style="color:#ba68c8">✨ 스킬 커맨드</div>
+    <div id="skl-list"></div>
+    <div class="popup-actions" style="margin-top:6px">
+      <button class="popup-cancel" onclick="closePopup('popup-skl')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 결과 -->
+<div id="overlay">
+  <div id="overlay-msg"></div>
+  <div id="overlay-sub"></div>
+  <button id="overlay-btn" onclick="initGame()">다시 시작</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  정의
+// ════════════════════════════════════════════
+const ATTRS = {
+  fire:   { name:'불', emoji:'🔥', cls:'attr-fire',   color:'#ff7043' },
+  water:  { name:'물', emoji:'💧', cls:'attr-water',  color:'#42a5f5' },
+  forest: { name:'숲', emoji:'🌿', cls:'attr-forest', color:'#66bb6a' },
+  light:  { name:'빛', emoji:'✨', cls:'attr-light',  color:'#fff176' },
+  dark:   { name:'암', emoji:'🌑', cls:'attr-dark',   color:'#ba68c8' },
+};
+const COUNT_MULT = [0, 1.0, 2.1, 3.3, 4.6, 6.0];
+const HAND_MAX   = 10;
+
+const CHARS = {
+  player: {
+    name: '불꽃검사 카엘',
+    maxHP: 1000, atk: 120, def: 60,
+    primary: 'fire',
+    weakness: 'water',          // 물 속성 피해 ×1.5
+    atkAttrs: ['fire','water','forest'],
+    defAttrs: ['fire','light','dark'],
+    skills: [
+      {
+        id: 'unique',
+        name: '불꽃폭발',
+        desc: '강렬한 화염으로 즉시 추가 피해 + 적에게 2턴 화상 부여',
+        cost: { fire: 3 },
+      },
+      {
+        id: 'dark_heal',
+        name: '어둠의 치유',
+        desc: '아군 실드 즉시 생성 + 3턴간 매 턴 실드 증가',
+        cost: { dark: 3, light: 1 },
+      },
+    ],
+  },
+  enemy: {
+    name: '암흑기사 레이스',
+    maxHP: 1200, atk: 100, def: 80,
+    primary: 'dark',
+    weakness: 'light',          // 빛 속성 피해 ×1.5
+    atkAttrs: ['dark','water','fire'],
+    defAttrs: ['dark','light','forest'],
+    skills: [],
+  },
+};
+
+// ════════════════════════════════════════════
+//  게임 상태
+// ════════════════════════════════════════════
+let G      = {};
+let atkPick = null;  // { attr, count }
+let defPick = null;
+
+function makeDeck() {
+  const d = [];
+  for (const a of Object.keys(ATTRS))
+    for (let i = 0; i < 8; i++)
+      d.push({ id: Math.random(), attr: a });
+  return d;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = 0 | Math.random() * (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function mkUnit(c) {
+  return {
+    ...c,
+    hp: c.maxHP, shield: 0,
+    drawPile: shuffle(makeDeck()),
+    discardPile: [], hand: [], effects: [],
+  };
+}
+
+function initGame() {
+  document.getElementById('overlay').classList.remove('show');
+  G = {
+    turn: 'player', turnNum: 0, busy: false,
+    player: mkUnit(CHARS.player),
+    enemy:  mkUnit(CHARS.enemy),
+  };
+  clearLog();
+  addLog('배틀 시작!', 'sys');
+  drawCards(G.player, 5);
+  drawCards(G.enemy,  5);
+
+  // 약점 표시 (한 번만 세팅)
+  const pw = CHARS.player.weakness;
+  const ew = CHARS.enemy.weakness;
+  document.getElementById('player-weakness').textContent =
+    `약점: ${ATTRS[pw].emoji}${ATTRS[pw].name}`;
+  document.getElementById('enemy-weakness').textContent  =
+    `약점: ${ATTRS[ew].emoji}${ATTRS[ew].name}`;
+
+  renderAll();
+  startPlayerTurn();
+}
+
+// ════════════════════════════════════════════
+//  덱 조작
+// ════════════════════════════════════════════
+function drawCards(unit, n) {
+  const room   = HAND_MAX - unit.hand.length;
+  const actual = Math.min(n, room);
+  if (n > 0 && actual <= 0) {
+    if (unit === G.player) addLog('손패 가득 (10장) → 드로우 스킵', 'sys');
+    return;
+  }
+  for (let i = 0; i < actual; i++) {
+    if (unit.drawPile.length === 0) {
+      if (unit.discardPile.length === 0) break;
+      unit.drawPile   = shuffle(unit.discardPile);
+      unit.discardPile = [];
+      addLog('덱 소진 → 버린 카드 재순환', 'sys');
+    }
+    unit.hand.push(unit.drawPile.shift());
+  }
+}
+
+function discardByAttr(unit, attr, n) {
+  let rem = n;
+  for (let i = unit.hand.length - 1; i >= 0 && rem > 0; i--) {
+    if (unit.hand[i].attr === attr) {
+      unit.discardPile.push(unit.hand.splice(i, 1)[0]);
+      rem--;
+    }
+  }
+}
+
+function discardMulti(unit, costs) {
+  for (const [attr, n] of Object.entries(costs))
+    discardByAttr(unit, attr, n);
+}
+
+function countAttr(unit, attr) {
+  return unit.hand.filter(c => c.attr === attr).length;
+}
+
+// ════════════════════════════════════════════
+//  턴 흐름
+// ════════════════════════════════════════════
+function startPlayerTurn() {
+  G.turn    = 'player';
+  G.turnNum++;
+  G.busy    = false;
+  tickEffects(G.player);
+  addLog(`── Turn ${G.turnNum} · 내 턴 ──`, 'sys');
+  renderAll();
+  setTurnUI(true);
+}
+
+// 공격 또는 방어 실행 후 자동으로 턴 종료
+function afterPlayerAction() {
+  G.busy = true;
+  setTurnUI(false);
+
+  const before = G.player.hand.length;
+  drawCards(G.player, 3);
+  drawCards(G.enemy,  3);
+  const got = G.player.hand.length - before;
+  addLog(`카드 ${got}장 보충`, 'sys');
+  renderAll();
+
+  setTimeout(enemyTurn, 700);
+}
+
+function enemyTurn() {
+  G.turn = 'enemy';
+  tickEffects(G.enemy);
+  addLog('── 적 턴 ──', 'sys');
+  renderAll();
+  setTimeout(() => {
+    aiAction();
+    renderAll();
+    setTimeout(() => { if (!checkEnd()) startPlayerTurn(); }, 800);
+  }, 500);
+}
+
+// ════════════════════════════════════════════
+//  팝업 열기
+// ════════════════════════════════════════════
+function isPlayerTurn() { return G.turn === 'player' && !G.busy; }
+
+function openAtk() {
+  if (!isPlayerTurn()) return;
+  atkPick = null;
+  buildAttrPopup('atk');
+  document.getElementById('popup-atk').classList.add('show');
+}
+function openDef() {
+  if (!isPlayerTurn()) return;
+  defPick = null;
+  buildAttrPopup('def');
+  document.getElementById('popup-def').classList.add('show');
+}
+function openSkl() {
+  if (!isPlayerTurn()) return;
+  buildSklPopup();
+  document.getElementById('popup-skl').classList.add('show');
+}
+
+// ════════════════════════════════════════════
+//  공격/방어 팝업 구성
+// ════════════════════════════════════════════
+function buildAttrPopup(mode) {
+  const listEl   = document.getElementById(`${mode}-attr-list`);
+  listEl.innerHTML = '';
+  const unit     = G.player;
+  const validArr = mode === 'atk' ? unit.atkAttrs : unit.defAttrs;
+
+  // 유효한 속성 3개만 표시
+  for (const attr of validArr) {
+    const have  = countAttr(unit, attr);
+    const isPri = attr === unit.primary;
+
+    const row = document.createElement('div');
+    row.className = `attr-row${have === 0 ? ' disabled' : ''}`;
+
+    const effTxt = isPri ? '100%' : '30%';
+    const effCls = isPri ? 'eff-primary' : 'eff-sub';
+
+    // 약점 뱃지 표시 (공격 팝업에서 적의 약점 속성 강조)
+    const isEnemyWeak = mode === 'atk' && G.enemy.weakness === attr;
+    const weakTag     = isEnemyWeak
+      ? `<span style="font-size:.68rem;color:#ff4444;font-weight:700;margin-left:6px">💥 약점</span>`
+      : '';
+
+    row.innerHTML = `
+      <div class="attr-row-head">
+        <span class="attr-badge"
+          style="background:${ATTRS[attr].color}22;color:${ATTRS[attr].color};border:1px solid ${ATTRS[attr].color}88">
+          ${ATTRS[attr].emoji} ${ATTRS[attr].name}
+        </span>
+        ${weakTag}
+        <span class="have-text" style="margin-left:4px">보유 <b style="color:#ccc">${have}</b>장</span>
+        <span class="eff-text ${effCls}">${effTxt}</span>
+      </div>
+      <div class="count-row" id="${mode}-cnt-${attr}"></div>
+    `;
+    listEl.appendChild(row);
+
+    const cntRow = row.querySelector(`#${mode}-cnt-${attr}`);
+    const mult   = isPri ? 1.0 : 0.3;
+    for (let n = 1; n <= 5; n++) {
+      const btn    = document.createElement('div');
+      const avail  = have >= n;
+      btn.className = `count-btn${avail ? ' avail' : ''}`;
+      // 약점 속성이면 피해 미리보기에 ×1.5 반영
+      const baseDmg = Math.round(unit.atk * mult * COUNT_MULT[n]);
+      const dispDmg = (mode === 'atk' && isEnemyWeak)
+        ? Math.round(baseDmg * 1.5)
+        : baseDmg;
+      const val = avail
+        ? (mode === 'atk' ? `${dispDmg}` : `+${Math.round(unit.def * mult * COUNT_MULT[n])}`)
+        : '—';
+      btn.innerHTML  = `${n}장<br><span style="font-size:.68rem;opacity:.8">${val}</span>`;
+      btn.dataset.attr  = attr;
+      btn.dataset.count = n;
+      btn.dataset.mode  = mode;
+      if (avail) btn.onclick = () => pickCount(mode, attr, n);
+      cntRow.appendChild(btn);
+    }
+  }
+  updatePreview(mode);
+}
+
+function pickCount(mode, attr, count) {
+  if (mode === 'atk') atkPick = { attr, count };
+  else                defPick = { attr, count };
+
+  document.querySelectorAll(`[data-mode="${mode}"]`).forEach(b => {
+    b.classList.remove('picked');
+    b.style.color = '';
+    b.style.borderColor = '';
+  });
+  document.querySelectorAll(
+    `[data-mode="${mode}"][data-attr="${attr}"][data-count="${count}"]`
+  ).forEach(b => {
+    b.classList.add('picked');
+    b.style.color       = ATTRS[attr].color;
+    b.style.borderColor = ATTRS[attr].color;
+  });
+  updatePreview(mode);
+}
+
+function updatePreview(mode) {
+  const pick   = mode === 'atk' ? atkPick : defPick;
+  const prevEl = document.getElementById(`${mode}-preview`);
+  const confEl = document.getElementById(`${mode}-confirm`);
+
+  if (!pick) {
+    prevEl.innerHTML = '속성과 장수를 선택하세요';
+    confEl.classList.remove('on');
+    return;
+  }
+
+  const unit   = G.player;
+  const isPri  = pick.attr === unit.primary;
+  const mult   = isPri ? 1.0 : 0.3;
+  const cntMul = COUNT_MULT[pick.count];
+  const eff    = isPri
+    ? '<span style="color:#ffd54f">주속성</span>'
+    : '<span style="color:#ff7043">비주력 ×0.3</span>';
+
+  if (mode === 'atk') {
+    const baseDmg = Math.round(unit.atk * mult * cntMul);
+    const isWeak  = G.enemy.weakness === pick.attr;
+    const dmg     = isWeak ? Math.round(baseDmg * 1.5) : baseDmg;
+    const weakStr = isWeak ? ' <span style="color:#ff4444">💥 약점 ×1.5</span>' : '';
+    prevEl.innerHTML = `${ATTRS[pick.attr].emoji} ${ATTRS[pick.attr].name} <b>${pick.count}장</b> 사용 → 피해 <b>${dmg}</b>  ${eff}${weakStr}`;
+  } else {
+    const shd = Math.round(unit.def * mult * cntMul);
+    prevEl.innerHTML = `${ATTRS[pick.attr].emoji} ${ATTRS[pick.attr].name} <b>${pick.count}장</b> 사용 → 실드 <b>+${shd}</b>  ${eff}`;
+  }
+  confEl.classList.add('on');
+}
+
+// ════════════════════════════════════════════
+//  스킬 팝업 구성
+// ════════════════════════════════════════════
+function buildSklPopup() {
+  const el   = document.getElementById('skl-list');
+  el.innerHTML = '';
+  const unit = G.player;
+
+  for (const sk of unit.skills) {
+    const ready = Object.entries(sk.cost).every(([a, n]) => countAttr(unit, a) >= n);
+    const div   = document.createElement('div');
+    div.className = `skill-item${ready ? ' ready' : ''}`;
+
+    let costHtml = '';
+    for (const [a, n] of Object.entries(sk.cost)) {
+      const have = countAttr(unit, a);
+      const ok   = have >= n;
+      costHtml  += `<span class="cost-tag ${ok ? 'cost-ok' : 'cost-bad'}">${ATTRS[a].emoji} ${ATTRS[a].name} ×${n} (보유 ${have})</span>`;
+    }
+
+    div.innerHTML = `
+      <div class="skill-name">${sk.name}</div>
+      <div class="skill-desc">${sk.desc}</div>
+      <div style="margin-top:6px">${costHtml}</div>
+    `;
+    if (ready) div.onclick = () => { closePopup('popup-skl'); execSkill(sk); };
+    el.appendChild(div);
+  }
+}
+
+// ════════════════════════════════════════════
+//  커맨드 실행
+// ════════════════════════════════════════════
+function confirmAtk() {
+  if (!atkPick) return;
+  const { attr, count } = atkPick;
+  const unit  = G.player;
+  const isPri = attr === unit.primary;
+  const dmg   = Math.round(unit.atk * (isPri ? 1.0 : 0.3) * COUNT_MULT[count]);
+
+  addLog(`⚔️ 공격 [${ATTRS[attr].emoji}${ATTRS[attr].name} ×${count}] → ${dmg} 피해`, 'atk');
+  applyDamage(G.enemy, dmg, attr);
+  discardByAttr(unit, attr, count);
+  closePopup('popup-atk');
+  renderAll();
+  if (!checkEnd()) afterPlayerAction();
+}
+
+function confirmDef() {
+  if (!defPick) return;
+  const { attr, count } = defPick;
+  const unit  = G.player;
+  const isPri = attr === unit.primary;
+  const shd   = Math.round(unit.def * (isPri ? 1.0 : 0.3) * COUNT_MULT[count]);
+
+  addLog(`🛡 방어 [${ATTRS[attr].emoji}${ATTRS[attr].name} ×${count}] → 실드 +${shd}`, 'def');
+  G.player.shield += shd;
+  discardByAttr(unit, attr, count);
+  closePopup('popup-def');
+  renderAll();
+  afterPlayerAction();
+}
+
+function execSkill(sk) {
+  addLog(`✨ 스킬 [${sk.name}] 발동!`, 'skl');
+  const unit = G.player;
+
+  if (sk.id === 'unique') {
+    const bonus = Math.round(unit.atk * 1.5);
+    applyDamage(G.enemy, bonus, 'fire');
+    G.enemy.effects.push({ type: 'burn', value: Math.round(unit.atk * 0.3), remaining: 2 });
+    addLog(`  → ${bonus} 추가 피해 + 화상 2턴`, 'skl');
+  } else if (sk.id === 'dark_heal') {
+    const shd = Math.round(unit.def * 2.0);
+    unit.shield += shd;
+    unit.effects.push({ type: 'shieldOT', value: Math.round(unit.def * 0.5), remaining: 3 });
+    addLog(`  → 실드 +${shd} + 3턴간 매 턴 실드 증가`, 'skl');
+  }
+
+  discardMulti(unit, sk.cost);
+  renderAll();
+  if (!checkEnd()) afterPlayerAction();
+}
+
+// ════════════════════════════════════════════
+//  AI
+// ════════════════════════════════════════════
+function aiAction() {
+  const e       = G.enemy;
+  const hpRatio = e.hp / e.maxHP;
+
+  // 저체력 → 방어 시도
+  if (hpRatio < 0.3 && e.shield < 150) {
+    for (const attr of e.defAttrs) {
+      const have = countAttr(e, attr);
+      if (have >= 2) {
+        const isPri = attr === e.primary;
+        const shd   = Math.round(e.def * (isPri ? 1.0 : 0.3) * COUNT_MULT[2]);
+        addLog(`🛡 적 방어 [${ATTRS[attr].emoji}${ATTRS[attr].name} ×2] → 실드 +${shd}`, 'def');
+        e.shield += shd;
+        discardByAttr(e, attr, 2);
+        return;
+      }
+    }
+  }
+
+  // 공격: 주속성 우선
+  const order = [e.primary, ...e.atkAttrs.filter(a => a !== e.primary)];
+  for (const attr of order) {
+    const have = countAttr(e, attr);
+    if (!have) continue;
+    const use   = Math.min(have, 3);
+    const isPri = attr === e.primary;
+    const dmg   = Math.round(e.atk * (isPri ? 1.0 : 0.3) * COUNT_MULT[use]);
+    addLog(`⚔️ 적 공격 [${ATTRS[attr].emoji}${ATTRS[attr].name} ×${use}] → ${dmg} 피해`, 'atk');
+    applyDamage(G.player, dmg, attr);
+    discardByAttr(e, attr, use);
+    return;
+  }
+  addLog('적: 패스', 'sys');
+}
+
+// ════════════════════════════════════════════
+//  계산
+// ════════════════════════════════════════════
+// attackAttr 전달 시 약점 상성 체크 (×1.5)
+function applyDamage(unit, dmg, attackAttr = null) {
+  if (attackAttr && unit.weakness === attackAttr) {
+    const boosted = Math.round(dmg * 1.5);
+    addLog(`  💥 상성! ${ATTRS[attackAttr].emoji}${ATTRS[attackAttr].name}은 ${unit.name}의 약점 (×1.5)`, 'skl');
+    dmg = boosted;
+  }
+  if (unit.shield > 0) {
+    const abs = Math.min(unit.shield, dmg);
+    unit.shield -= abs;
+    dmg         -= abs;
+    if (abs > 0) addLog(`  실드 ${abs} 흡수`, 'def');
+  }
+  unit.hp = Math.max(0, unit.hp - dmg);
+  if (dmg > 0) addLog(`  HP -${dmg}`, 'dmg');
+}
+
+function tickEffects(unit) {
+  for (let i = unit.effects.length - 1; i >= 0; i--) {
+    const e = unit.effects[i];
+    if (e.type === 'shieldOT') { unit.shield += e.value; addLog(`[지속] 실드 +${e.value}`, 'def'); }
+    if (e.type === 'burn')     { applyDamage(unit, e.value); addLog(`[화상] ${e.value} 피해`, 'dmg'); }
+    if (--e.remaining <= 0) unit.effects.splice(i, 1);
+  }
+}
+
+function checkEnd() {
+  if (G.player.hp <= 0) { showResult(false); return true; }
+  if (G.enemy.hp  <= 0) { showResult(true);  return true; }
+  return false;
+}
+
+function showResult(win) {
+  document.getElementById('overlay-msg').textContent = win ? '🏆 Victory!' : '💀 Defeat...';
+  document.getElementById('overlay-msg').style.color = win ? '#ffd54f' : '#ef5350';
+  document.getElementById('overlay-sub').textContent = win ? '적을 물리쳤다!' : '전투에서 패배했다...';
+  document.getElementById('overlay').classList.add('show');
+}
+
+// ════════════════════════════════════════════
+//  UI 갱신
+// ════════════════════════════════════════════
+function setTurnUI(isPlayer) {
+  document.getElementById('player-badge').style.display = isPlayer ? '' : 'none';
+  document.getElementById('enemy-badge').style.display  = isPlayer ? 'none' : '';
+  refreshCmdBtns(isPlayer);
+}
+
+function refreshCmdBtns(isPlayer) {
+  // pointer-events는 CSS로 제어, 여기서는 .on 클래스만 토글
+  const hasSkill = isPlayer && G.player.skills.some(sk =>
+    Object.entries(sk.cost).every(([a, n]) => countAttr(G.player, a) >= n));
+
+  setOn('btn-atk', isPlayer);
+  setOn('btn-def', isPlayer);
+  setOn('btn-skl', hasSkill);
+}
+
+function setOn(id, active) {
+  document.getElementById(id).classList.toggle('on', !!active);
+}
+
+function closePopup(id)   { document.getElementById(id).classList.remove('show'); }
+function closeAllPopups() { ['popup-atk','popup-def','popup-skl'].forEach(closePopup); }
+
+// ════════════════════════════════════════════
+//  렌더링
+// ════════════════════════════════════════════
+function renderAll() {
+  renderUnit('player');
+  renderUnit('enemy');
+  renderHand();
+  renderDeck('player');
+  renderDeck('enemy');
+}
+
+function renderUnit(who) {
+  const u  = G[who];
+  const hp = Math.max(0, u.hp);
+  document.getElementById(`${who}-hp-bar`).style.width = `${(hp / u.maxHP * 100).toFixed(1)}%`;
+  document.getElementById(`${who}-hp-num`).textContent  = `${hp} / ${u.maxHP}`;
+  const shW  = u.shield > 0 ? `${Math.min(100, u.shield / u.maxHP * 100).toFixed(1)}%` : '0';
+  document.getElementById(`${who}-sh-bar`).style.width = shW;
+  document.getElementById(`${who}-sh-num`).textContent  = u.shield > 0 ? `실드 ${u.shield}` : '';
+}
+
+function renderHand() {
+  const area  = document.getElementById('hand-area');
+  area.querySelectorAll('.card').forEach(e => e.remove());
+
+  const hand  = G.player.hand;
+  const n     = hand.length;
+  document.getElementById('hand-label').textContent = `손패 ${n} / ${HAND_MAX}`;
+
+  const W      = area.offsetWidth || 860;
+  const spread = Math.min(W * 0.88, 720);
+  const maxAng = 13;
+
+  hand.forEach((card, i) => {
+    const t   = n === 1 ? 0.5 : i / (n - 1);
+    const x   = (t - 0.5) * spread;
+    const rot = (0.5 - t) * maxAng * 2;
+    const arc = Math.abs(t - 0.5) * 22;   // 가운데가 위로 올라오는 아치
+
+    const div = document.createElement('div');
+    div.className = `card ${ATTRS[card.attr].cls}`;
+    div.innerHTML = `<div class="emoji">${ATTRS[card.attr].emoji}</div><div>${ATTRS[card.attr].name}</div>`;
+    div.style.left      = `calc(50% + ${x}px - 34px)`;
+    div.style.bottom    = `${arc + 10}px`;
+    div.style.transform = `rotate(${rot}deg)`;
+    div.style.zIndex    = 10 + i;
+    area.appendChild(div);
+  });
+}
+
+function renderDeck(who) {
+  const u = G[who];
+  document.getElementById(`${who}-deck`).innerHTML =
+    `덱 ${u.drawPile.length}<br>버림 ${u.discardPile.length}`;
+}
+
+function addLog(msg, type = '') {
+  const a   = document.getElementById('log-area');
+  const div = document.createElement('div');
+  div.className   = `log-entry ${type}`;
+  div.textContent = msg;
+  a.appendChild(div);
+  a.scrollTop = a.scrollHeight;
+}
+function clearLog() { document.getElementById('log-area').innerHTML = ''; }
+
+// ════════════════════════════════════════════
+initGame();
+</script>
+</body>
+</html>
